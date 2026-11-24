@@ -109,6 +109,14 @@ directory. Client logs and complete traces remain untracked.
 
 ## Future synchronization
 
+The fork also tracks its Windows x64 native distribution under `dist/win-x64`.
+Consumer machines can pull and run it without an SDK or C++ toolchain; use the
+[distribution quick start](../dist/README.md). Only the two executables, default
+configuration, source/build record and checksums are tracked. Runtime credentials,
+logs, traces and debugging symbols remain excluded. Refresh it on a build machine
+with `scripts/update-dist.ps1`, verify the exact staged binary with a real client,
+then commit and push the payload together with its build record.
+
 Commit or otherwise preserve in-progress work before merging. Then run:
 
 ```powershell

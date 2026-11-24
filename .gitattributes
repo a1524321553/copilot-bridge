@@ -17,3 +17,11 @@ src/CopilotBridge.Cli/Catalogs/Codex/Bundled/models.json -text
 src/CopilotBridge.Cli/Catalogs/Codex/Bundled/capture.json text eol=lf
 src/CopilotBridge.Cli/Catalogs/Codex/Supplemental/models.json -text
 src/CopilotBridge.Cli/Catalogs/Codex/Supplemental/capture.json text eol=lf
+
+# The tracked native distribution and checksummed metadata must survive checkout
+# byte-for-byte, including on machines with core.autocrlf enabled.
+dist/**/*.exe binary
+dist/**/appsettings.json -text
+dist/**/build-info.json -text
+dist/**/SHA256SUMS text eol=lf
+dist/README.md text eol=lf

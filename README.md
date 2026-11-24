@@ -9,6 +9,11 @@ and **Codex** (Gemini CLI is on the roadmap). copilot-bridge is a small reverse
 proxy that exposes Copilot's LLM API under a vendor-neutral URL per client, so
 each CLI talks to the bridge as if it were talking to its native provider.
 
+**This personal fork includes a ready-to-run Windows x64 build in
+[`dist/win-x64`](dist/win-x64) on `codex/local-customizations`.** New machines
+can clone/pull and copy that payload without installing .NET or C++ build tools.
+See [the distribution quick start](dist/README.md) for login and Codex setup.
+
 ```
 Claude Code (Anthropic shape) ──► /cc/v1/messages       ┐
 Codex       (Responses shape) ──► /codex/responses       ├─► copilot-bridge ─► GitHub Copilot

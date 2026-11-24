@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "runtime_identifier": "win-x64",
+  "source_commit": "829ae9f26dcb5c84fa797d5731652f1bc9da9f2b",
+  "sdk_version": "10.0.404",
+  "product_version": "0.1.0-dev+829ae9f26dcb5c84fa797d5731652f1bc9da9f2b",
+  "packaged_at_utc": "2026-11-24T06:15:04.1356406Z",
+  "files": [
+    {
+      "name": "copilot-bridge.exe",
+      "bytes": 15409664,
+      "sha256": "68f4bbee8cd716763fadfce6e027d4db323be6892b3d91083213983c7bda0767"
+    },
+    {
+      "name": "copilot-updater.exe",
+      "bytes": 5040128,
+      "sha256": "a9247606ed620495ed6bc1430ba8aa41a021e3bddcd311a6ddc298c86a1b1876"
+    },
+    {
+      "name": "appsettings.json",
+      "bytes": 23511,
+      "sha256": "8c1ee660acb5f06c3b4c9c71567bdeb309552d6e4c473806e55fb5937397eac8"
+    }
+  ]
+}

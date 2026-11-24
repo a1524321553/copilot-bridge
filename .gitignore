@@ -15,6 +15,18 @@ artifacts/
 *.pubxml
 *.publishproj
 
+# Reviewed Windows distribution for this personal fork. Track only the runtime
+# payload and its provenance; never publish an entire build/runtime directory.
+/dist/*
+!/dist/README.md
+!/dist/win-x64/
+/dist/win-x64/*
+!/dist/win-x64/copilot-bridge.exe
+!/dist/win-x64/copilot-updater.exe
+!/dist/win-x64/appsettings.json
+!/dist/win-x64/build-info.json
+!/dist/win-x64/SHA256SUMS
+
 # IDE
 .vs/
 .vscode/*
