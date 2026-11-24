@@ -571,7 +571,9 @@ Codex-owned instructions and tool behavior. The bridge therefore starts from the
 reviewed `openai/codex` `rust-v0.144.1` catalog and overlays only exact-slug
 Copilot facts. It does not forward Copilot's `data`, `capabilities`, or
 `supported_endpoints` entry shape and does not invent Codex behavior for a
-live-only slug.
+live-only slug. The single identity-only exception is `gpt-5.6-sol-fast`:
+validated picker-enabled live discovery may clone the complete official
+`gpt-5.6-sol` resource while changing only its slug and live display name.
 
 Copilot has no `/resources` model endpoint. Discovery uses `GET /models`, and an
 exact Copilot model record is available at `GET /models/{id}`. These are backend
@@ -594,7 +596,7 @@ Captured backend metadata and compaction examples for direct Responses routes:
 | Models | Total context | Maximum prompt | Maximum output | Bridge auto-compact |
 | --- | ---: | ---: | ---: | ---: |
 | `gpt-5.4`, `gpt-5.5`, `gpt-5.6-{luna,sol,terra}` | 1,050,000 | 922,000 | 128,000 | 778,000 |
-| `gpt-5.6-sol-fast` (internal-only; absent from official Codex catalog) | 1,050,000 | 922,000 | 128,000 | not synthesized |
+| `gpt-5.6-sol-fast` (internal-only; controlled alias from official Sol resource) | 1,050,000 | 922,000 | 128,000 | 778,000 |
 | `gpt-6-luna`, `gpt-6-sol` | 1,000,000 | 872,000 | 128,000 | 728,000 |
 | `gpt-6.1-sol` (reviewed official catalog supplement) | 1,050,000 | 922,000 | 128,000 | 778,000 |
 | `gpt-6.1-terra` (2026-10-27; inconsistent live limits) | 1,000,000 | 1,000,000 | 128,000 | retain official null; context 500,000, maximum 872,000 |
@@ -604,9 +606,10 @@ Captured backend metadata and compaction examples for direct Responses routes:
 | `gpt-5-mini` | 264,000 | 128,000 | 64,000 | 48,000 |
 | `mai-code-1.1-flash` (2026-10-02 exact-id live replacement) | 256,000 | 128,000 | 128,000 | official client catalog dependent |
 
-The table describes the named backend ids directly. A catalog alias uses its
-resolved target's capacities instead. In particular, the shipped
-`gpt-5.6-sol -> gpt-6-astra` alias does not inherit direct Sol's 778,000 threshold.
+The table describes the named backend ids directly. Fresh installs keep
+`gpt-5.6-sol` direct, so its picker row uses the 778,000 threshold above. A
+configured catalog alias uses its resolved target's capacities instead; an optional
+`gpt-5.6-sol -> gpt-6-astra` alias does not inherit direct Sol's threshold.
 With a validated overlay, missing or internally inconsistent Astra target limits
 hide that alias; direct Astra selection retains its reviewed resource. The
 historical coherent Astra probe values are not a substitute for valid live

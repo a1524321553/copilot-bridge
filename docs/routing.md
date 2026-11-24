@@ -176,8 +176,17 @@ startup (exit code 2) with a message naming the offending `Routing.Locations[i]`
 
 ## Shipped configuration
 
-On a fresh install, the bundled `appsettings.json` actively routes the exact
-flagship Codex identity `gpt-5.6-sol` to `gpt-6-astra`:
+On a fresh install, the bundled `appsettings.json` keeps text-model routing empty:
+
+```jsonc
+"Locations": []
+```
+
+This keeps exact official catalog identities direct. In particular,
+`gpt-5.6-sol` remains eligible for its official `GET /codex/models` picker row
+when the live account exposes it.
+
+An operator can still opt into a Sol-to-Astra alias explicitly:
 
 ```jsonc
 "Locations": [
@@ -193,9 +202,9 @@ flagship Codex identity `gpt-5.6-sol` to `gpt-6-astra`:
 
 OpenAI's Astra migration guide and live Copilot probes agree that Astra accepts
 `low/medium/high/xhigh/max` and rejects `none/minimal`, hence the explicit map.
-The exact match leaves Luna, Terra, and Sol Fast direct. `GET /codex/models`
-retains the source slug/instructions but projects Astra's live 1,000,000 total /
-872,000 prompt limit, so the client compacts for the backend it actually reaches.
+For that optional alias, `GET /codex/models` retains the source slug/instructions
+but projects Astra's live limits, so the client compacts for the backend it
+actually reaches.
 Catalog projection applies a routed target only when the first potentially matching
 Location is unconditional for that source model. If an earlier effort/header rule
 could select another target, the validated catalog hides the alias instead of
@@ -204,14 +213,15 @@ An invariant cross-model alias is also hidden when its validated target omits or
 contradicts the three required limit fields; source-model limits are never reused
 for a different target.
 
-Config migration treats the complete Locations array as user-owned. An upgraded
-installation therefore retains its old array (including `[]`) and must add this
-entry explicitly. Clearing the array rolls the alias back to literal gpt-5.6-sol.
+Config migration treats the complete Locations array as user-owned. An older
+installation that already has the Sol-to-Astra alias therefore retains it across
+updates until the operator clears the array. A direct installation must add the
+entry explicitly to opt in.
 
 The file also carries an **alternative disabled** Claude Code → GPT example under
-`_Locations_disabled`, a key the config binder ignores. To use it alone, rename
-that key to `Locations` and rename the active array; to keep both, merge the entry
-into the active array. Exactly one `Locations` key may exist:
+`_Locations_disabled`, a key the config binder ignores. To use it, replace the
+empty active array with the entry, or rename that key to `Locations` and rename
+the active key. Exactly one `Locations` key may exist:
 
 ```jsonc
 "_Locations_disabled": [

@@ -6,6 +6,47 @@ xUnit drives the real client and captures evidence, then the
 [`real-client-verify` skill](../../.agents/skills/real-client-verify/SKILL.md)
 judges the client's execution and logs.
 
+## Published default Codex picker
+
+For exact GPT-6.2 picker and execution verification, use a real Codex 0.169.1
+app-server and an authorized non-refreshable version-3 Copilot Plugin credential:
+
+```pwsh
+$env:CODEX_EXE = '<path to the installed Codex 0.169.1 executable>'
+$env:COPILOT_BRIDGE_TEST_CODEX_VERSION = '0.169.1'
+$env:COPILOT_BRIDGE_TEST_PLUGIN_CREDENTIAL_SOURCE_DIRECTORY = '<version-3 credential directory>'
+# Optional: verify the native artifact instead of the JIT bridge.
+$env:COPILOT_BRIDGE_TEST_NATIVE_BINARY_DIRECTORY = '<published bridge directory>'
+dotnet test tests/CopilotBridge.Playground --filter "FullyQualifiedName~Codex_Gpt62_PickerAndMultiToolTask_ProducesDispatchLogForVerdict" --logger "console;verbosity=detailed"
+```
+
+Both exact ids must be visible in the real client's `model/list`, with
+low/medium/high/xhigh/max choices. The cases select each id and execute a
+CSV/Decimal programming task. Read the exact printed manifests' isolated
+SQLite logs and confirm custom tool call/output round-trips before reporting
+PASS. `Gpt62_ReviewedContracts_MatchSnapshotAndCatalog` and
+`Gpt62_RealCodexBytes_RewriteBoundaries` provide the backend B2/B3 and
+captured-request fidelity checks.
+
+`Codex_PublishedDefaults_ListGpt56SolAndExecuteMultiToolTask_ForVerdict` copies an
+already-published bridge into an isolated subprocess, preserves its packaged
+`Routing.Locations`, requires real Codex `model/list` to offer visible
+`gpt-5.6-sol` with all reviewed effort levels, and runs a three-command tool
+round-trip through that model.
+
+```pwsh
+$env:COPILOT_BRIDGE_TEST_NATIVE_BINARY_DIRECTORY = 'C:\Runtime\copilot-bridge\v2'
+$env:COPILOT_BRIDGE_TEST_CREDENTIAL_SOURCE_DIRECTORY = 'C:\Runtime\copilot-bridge\v2'
+$env:COPILOT_BRIDGE_TEST_CODEX_VERSION = '0.166.0'
+dotnet test tests/CopilotBridge.Playground --filter "FullyQualifiedName~Codex_PublishedDefaults_ListGpt56SolAndExecuteMultiToolTask_ForVerdict" --logger "console;verbosity=detailed"
+```
+
+The credential source must contain an authorized version-3 credential. The test
+records the selected executable path and SHA-256 in `binary.json`. A green xUnit
+run proves the picker assertion and captures evidence; the final tool-execution
+verdict still comes from the exact manifest-selected Codex SQLite log and bridge
+trace via `real-client-verify`.
+
 ## Images API
 
 `ImagesSdkTests` uses the real OpenAI Python SDK and Pillow to generate an image
@@ -32,8 +73,9 @@ case uses the `PYTHONPATH` of the test process for the OpenAI SDK.
 
 ## Codex Astra vision
 
-The two `CodexVisionBehaviorTests` cases exercise the stock
-`gpt-5.6-sol -> gpt-6-astra` route with real Codex app-server 0.153.4:
+The two `CodexVisionBehaviorTests` cases exercise an explicit
+`gpt-5.6-sol -> gpt-6-astra` route injected by the isolated `ServeProcess`
+scenario with real Codex app-server 0.153.4:
 
 - Native `localImage` attachment in the first turn.
 - Text-only input followed by actual `view_image` tool execution.

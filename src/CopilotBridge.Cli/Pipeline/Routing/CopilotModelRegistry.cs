@@ -50,6 +50,10 @@ internal sealed class CopilotModelRegistry : IModelRegistry
         // liveness and request contracts confirmed; luna-utility remains unavailable.
         "gpt-5.4-nano",
         "gpt-6.1-terra",
+        // ResponsesProbe.Gpt62_CandidateContracts_Probe (2026-11-20): exact-id
+        // Responses liveness, effort, field/tool and image-output contracts.
+        "gpt-6.2-astra",
+        "gpt-6.2-sol",
         "mai-code-2-flash",
         "gpt-5-mini",
         // The 2026-10-02 exact-id probes retired mai-code-1-flash-picker (400

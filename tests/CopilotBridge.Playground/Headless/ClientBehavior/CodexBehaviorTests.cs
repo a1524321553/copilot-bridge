@@ -76,6 +76,41 @@ public class CodexBehaviorTests
         await DriveAndRecordAsync("codex-multistep-toolchain", prompt);
     }
 
+    [Fact]
+    public async Task Codex_PublishedDefaults_ListGpt56SolAndExecuteMultiToolTask_ForVerdict()
+    {
+        var binaryDirectory = Environment.GetEnvironmentVariable(
+            "COPILOT_BRIDGE_TEST_NATIVE_BINARY_DIRECTORY");
+        if (string.IsNullOrWhiteSpace(binaryDirectory))
+            throw new InvalidOperationException(
+                "Set COPILOT_BRIDGE_TEST_NATIVE_BINARY_DIRECTORY to the published bridge directory.");
+
+        var credentialSource = Environment.GetEnvironmentVariable(
+            "COPILOT_BRIDGE_TEST_CREDENTIAL_SOURCE_DIRECTORY") ?? binaryDirectory;
+        const string model = "gpt-5.6-sol";
+        const string canary = "gpt56_published_defaults_canary_1106";
+        var prompt =
+            "Run three separate real shell tool calls in order; do not fabricate output:\n"
+            + "1. Write the exact line `published-defaults` to published_defaults_probe.txt.\n"
+            + $"2. Append the exact line `{canary}` to that file.\n"
+            + "3. Read the file, report both lines verbatim, and stop.";
+
+        await DriveAndRecordAsync(
+            "codex-gpt56-published-defaults",
+            prompt,
+            modelReasoningEffort: "high",
+            expectedCodexVersion: Environment.GetEnvironmentVariable(
+                "COPILOT_BRIDGE_TEST_CODEX_VERSION") ?? "0.166.0",
+            credentialSourceDirectory: credentialSource,
+            credentialStagingMode: CredentialStagingMode.CopilotPluginVersionThree,
+            model: model,
+            requiredListedModel: model,
+            requiredListedReasoningEfforts: ["low", "medium", "high", "xhigh", "max", "ultra"],
+            scenario: ServeScenario.PackagedDefaults,
+            resolvedModel: model,
+            bridgeBinaryDirectory: binaryDirectory);
+    }
+
     /// <summary>
     /// Candidate-targeted client evidence for the reviewed GPT-6 resources. Each
     /// exact id must load from <c>/codex/models</c>, route natively to Responses,
@@ -292,6 +327,43 @@ public class CodexBehaviorTests
     }
 
     /// <summary>
+    /// Exact GPT-6.2 picker selection and multi-tool execution evidence. The
+    /// verdict requires this run's client-owned SQLite log and tool round-trips.
+    /// </summary>
+    [Theory]
+    [InlineData("gpt-6.2-astra")]
+    [InlineData("gpt-6.2-sol")]
+    public async Task Codex_Gpt62_PickerAndMultiToolTask_ProducesDispatchLogForVerdict(string model)
+    {
+        var source = Environment.GetEnvironmentVariable("COPILOT_BRIDGE_TEST_PLUGIN_CREDENTIAL_SOURCE_DIRECTORY")
+            ?? throw new InvalidOperationException("Set an authorized version-3 credential source directory.");
+        var canary = model.Replace('-', '_') + "_picker_canary_112026";
+        var prompt =
+            "Complete this small programming task using actual tools, not simulated results. "
+            + "Use apply_patch to create sales.csv with header item,quantity,price and rows "
+            + "alpha,3,12.50; beta,2,4.25; gamma,1,7.75 (one row per line). "
+            + "Use apply_patch to create sales.py that reads sales.csv, uses Decimal to calculate "
+            + "each line total and the grand total, and writes summary.json. "
+            + "Execute the program with a real shell/code tool, inspect summary.json with a separate "
+            + "tool call, then add a fourth CSV row delta,2,3.00 using apply_patch. "
+            + "Execute the program again and read summary.json again with a separate tool call. "
+            + "Also write the exact line " + canary + " to verified.txt and read it back. "
+            + "Report the final line totals, grand total and canary from actual tool outputs, then stop.";
+        await DriveAndRecordAsync(
+            "codex-gpt62-picker-" + model,
+            prompt,
+            modelReasoningEffort: "high",
+            expectedCodexVersion: Environment.GetEnvironmentVariable("COPILOT_BRIDGE_TEST_CODEX_VERSION") ?? "0.169.1",
+            credentialSourceDirectory: source,
+            credentialStagingMode: CredentialStagingMode.CopilotPluginVersionThree,
+            model: model,
+            requiredListedModel: model,
+            requiredListedReasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
+            resolvedModel: model,
+            bridgeBinaryDirectory: Environment.GetEnvironmentVariable("COPILOT_BRIDGE_TEST_NATIVE_BINARY_DIRECTORY"));
+    }
+
+    /// <summary>
     /// Candidate-targeted evidence for Copilot's internal-only Sol Fast id. This
     /// must remain separate from <see cref="ClientBehaviorSupport.LatestGpt"/>:
     /// Fast is an opt-in variant, not a replacement for the public Sol default.
@@ -312,15 +384,22 @@ public class CodexBehaviorTests
             + "Then use your code-execution tool to compute 43 * 47 (run actual code, do not compute by hand). "
             + "Run a shell command that writes the numeric result to sol_fast_probe.txt, run another shell command "
             + "that appends the exact suffix " + canary + ", then read the file, report both lines verbatim, and stop.";
+        var binaryDirectory = Environment.GetEnvironmentVariable(
+            "COPILOT_BRIDGE_TEST_NATIVE_BINARY_DIRECTORY");
 
         await DriveAndRecordAsync(
             "codex-sol-fast-model-support",
             prompt,
             modelReasoningEffort: "max",
             modelReasoningSummary: "detailed",
+            expectedCodexVersion: "0.166.0",
             credentialSourceDirectory: credentialSource,
             credentialStagingMode: CredentialStagingMode.CopilotPluginVersionThree,
-            model: "gpt-5.6-sol-fast");
+            model: "gpt-5.6-sol-fast",
+            requiredListedModel: "gpt-5.6-sol-fast",
+            requiredListedReasoningEfforts: ["low", "medium", "high", "xhigh", "max"],
+            resolvedModel: "gpt-5.6-sol-fast",
+            bridgeBinaryDirectory: binaryDirectory);
     }
 
     /// <summary>
@@ -1336,7 +1415,8 @@ public class CodexBehaviorTests
         IReadOnlyList<string>? requiredListedReasoningEfforts = null,
         JsonArray? injectedItems = null,
         ServeScenario scenario = ServeScenario.Passthrough,
-        string? resolvedModel = null)
+        string? resolvedModel = null,
+        string? bridgeBinaryDirectory = null)
     {
         await using var bridge = await ServeProcess.StartAsync(new ServeInvocation(
             scenario,
@@ -1344,7 +1424,8 @@ public class CodexBehaviorTests
             CredentialSourceDirectory: credentialSourceDirectory,
             CredentialStagingMode: credentialStagingMode,
             SimulateUpdaterTargetActivation: simulateUpdaterTargetActivation,
-            UseCustomOAuthApp: useCustomOAuthApp));
+            UseCustomOAuthApp: useCustomOAuthApp,
+            BridgeBinaryDirectory: bridgeBinaryDirectory));
         _output.WriteLine($"bridge up at {bridge.BaseUrl} (trace: {bridge.TraceDir})");
 
         if (expectedBridgeLogsBeforeClient is not null)
@@ -1407,6 +1488,19 @@ public class CodexBehaviorTests
 
         _output.WriteLine($"[manifest] {manifestPath}");
         _output.WriteLine("[verdict] run `/real-client-verify`; it reads the isolated SQLite log for this exact thread.");
+        if (bridgeBinaryDirectory is not null)
+        {
+            var binary = Path.Combine(
+                Path.GetFullPath(bridgeBinaryDirectory), "copilot-bridge.exe");
+            var evidence = new JsonObject
+            {
+                ["path"] = binary,
+                ["sha256"] = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(binary))),
+            };
+            var evidencePath = Path.Combine(bridge.TraceDir, "binary.json");
+            File.WriteAllText(evidencePath, evidence.ToJsonString());
+            _output.WriteLine($"[binary] {evidence.ToJsonString()}");
+        }
 
         if (forceCapiForbiddenOnce is not null)
         {

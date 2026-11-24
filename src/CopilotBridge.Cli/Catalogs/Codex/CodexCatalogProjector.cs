@@ -17,6 +17,8 @@ internal sealed record CodexCatalogProjection
 internal sealed class CodexCatalogProjector
 {
     private const string ResponsesEndpoint = "/responses";
+    private const string Gpt56SolSlug = "gpt-5.6-sol";
+    private const string Gpt56SolFastSlug = "gpt-5.6-sol-fast";
     private const int CompactionGrowthMarginTokens = 16_000;
     private readonly CodexModelProfileCatalog _profiles;
     private readonly IModelRegistry _routes;
@@ -70,7 +72,10 @@ internal sealed class CodexCatalogProjector
             .Where(model => !string.IsNullOrWhiteSpace(model.Id))
             .GroupBy(model => model.Id, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-        var candidates = MergeReviewedSupplements(baseline.Models, _supplemental.Models);
+        var candidates = AddSolFastAlias(
+            MergeReviewedSupplements(baseline.Models, _supplemental.Models),
+            liveById,
+            liveOverlayValidated);
         var resolvedRoutes = candidates
             .Select(model => ResolveConfiguredTarget(GetSlug(model)))
             .ToArray();
@@ -95,13 +100,17 @@ internal sealed class CodexCatalogProjector
             };
 
             // The official Codex resource advertises Ultra, but the exact
-            // GPT-6.1 Sol and Terra Copilot /responses profiles reject it
-            // (Gpt61Sol_Effort_ReProbe / October2026_CandidateContracts_Probe).
+            // GPT-6.1 Sol/Terra and GPT-6.2 Astra/Sol Copilot /responses profiles
+            // reject it (Gpt61Sol_Effort_ReProbe /
+            // October2026_CandidateContracts_Probe / Gpt62_CandidateContracts_Probe).
             // Apply this to every source record,
             // including future same-slug baselines, without changing the
             // provenance-pinned official resource on disk.
-            if ((string.Equals(slug, "gpt-6.1-sol", StringComparison.Ordinal) ||
-                 string.Equals(slug, "gpt-6.1-terra", StringComparison.Ordinal)) &&
+            if ((string.Equals(slug, Gpt56SolFastSlug, StringComparison.Ordinal) ||
+                 string.Equals(slug, "gpt-6.1-sol", StringComparison.Ordinal) ||
+                 string.Equals(slug, "gpt-6.1-terra", StringComparison.Ordinal) ||
+                 string.Equals(slug, "gpt-6.2-astra", StringComparison.Ordinal) ||
+                 string.Equals(slug, "gpt-6.2-sol", StringComparison.Ordinal)) &&
                 _profiles.Get(slug) is { } profile)
             {
                 var accepted = profile.AcceptedEfforts.ToHashSet(StringComparer.Ordinal);
@@ -151,6 +160,48 @@ internal sealed class CodexCatalogProjector
         }
         var hash = Convert.ToHexStringLower(SHA256.HashData(buffer.ToArray()));
         return new CodexCatalogProjection { Models = output, ETag = $"\"{hash}\"" };
+    }
+
+    private IReadOnlyList<JsonElement> AddSolFastAlias(
+        IReadOnlyList<JsonElement> candidates,
+        IReadOnlyDictionary<string, CopilotModel> liveById,
+        bool liveOverlayValidated)
+    {
+        if (!liveOverlayValidated ||
+            _profiles.Get(Gpt56SolFastSlug) is null ||
+            candidates.Any(model => string.Equals(
+                GetSlug(model), Gpt56SolFastSlug, StringComparison.Ordinal)) ||
+            !liveById.TryGetValue(Gpt56SolFastSlug, out var live) ||
+            !live.ModelPickerEnabled ||
+            string.IsNullOrWhiteSpace(live.Name) ||
+            live.SupportedEndpoints?.Contains(ResponsesEndpoint, StringComparer.Ordinal) != true ||
+            !TryMapLimits(live, out _, out _))
+            return candidates;
+
+        var sourceIndex = -1;
+        for (var index = 0; index < candidates.Count; index++)
+        {
+            if (!string.Equals(GetSlug(candidates[index]), Gpt56SolSlug, StringComparison.Ordinal))
+                continue;
+            sourceIndex = index;
+            break;
+        }
+        if (sourceIndex < 0) return candidates;
+
+        var alias = RewriteObject(
+            candidates[sourceIndex],
+            new Dictionary<string, Action<Utf8JsonWriter>>(StringComparer.Ordinal)
+            {
+                ["slug"] = writer => writer.WriteStringValue(Gpt56SolFastSlug),
+                ["display_name"] = writer => writer.WriteStringValue(live.Name),
+            });
+        var merged = new List<JsonElement>(candidates.Count + 1);
+        for (var index = 0; index < candidates.Count; index++)
+        {
+            merged.Add(candidates[index]);
+            if (index == sourceIndex) merged.Add(alias);
+        }
+        return merged;
     }
 
     private static IReadOnlyList<JsonElement> MergeReviewedSupplements(

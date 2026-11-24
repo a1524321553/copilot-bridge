@@ -4,13 +4,13 @@
   "source_commit": "8a3c4ea3b5a7c0e92cf24dae46ec87629a26bb7f",
   "source_url": "https://raw.githubusercontent.com/openai/codex/8a3c4ea3b5a7c0e92cf24dae46ec87629a26bb7f/codex-rs/models-manager/models.json",
   "source_sha256": "0178d235c589a31abd6ed0ea1e870935dc5819240eb0e813e178d3ebedf534f4",
-  "resource_sha256": "594360f583da12096eb66419159bc43c6a93a5c3cc81cef99896521706bf90f7",
+  "resource_sha256": "be0f9aed05412c7b24f5b61da8161c5293dea5463d97670d56e18e794c3d9f01",
   "captured_at_utc": "2026-09-23T03:24:55Z",
   "models": [
     "gpt-6-luna",
     "gpt-6-sol"
   ],
-  "note": "Complete official Codex model resources. Every source is pinned; additional sources supply GPT-6.1 Sol and Terra. Projection filters only probed-rejected efforts and leaves source records unchanged.",
+  "note": "Complete official Codex model resources from pinned sources, including GPT-6.1 and GPT-6.2. Projection filters only probed-rejected efforts and leaves source records unchanged.",
   "additional_sources": [
     {
       "source_commit": "a20fe6335f960a350483d0079db2ec281c68202c",
@@ -29,6 +29,16 @@
       "source_sha256": "1384625c0b6b3e67d3c60da29becea2b017f2c283fc1e2d05b8edafb4698eb10",
       "source_url": "https://raw.githubusercontent.com/openai/codex/126a0ee92ed2c5e73cd8a8f7e37563e8527552d7/codex-rs/models-manager/models.json",
       "captured_at_utc": "2026-10-27T02:29:03.2259032Z"
+    },
+    {
+      "source_commit": "c376cf7396eff83ce4c6ac61b9553df142e7a0be",
+      "source_url": "https://raw.githubusercontent.com/openai/codex/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/models-manager/models.json",
+      "source_sha256": "d50b6749506d97e5f334dbabcb666eb1689f423cf3e88cfabdcf3c536b873068",
+      "captured_at_utc": "2026-11-20T02:55:01.6594944Z",
+      "models": [
+        "gpt-6.2-astra",
+        "gpt-6.2-sol"
+      ]
     }
   ]
 }

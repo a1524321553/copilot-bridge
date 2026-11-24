@@ -33,6 +33,8 @@ public class CodexRoutingAndCatalogTests
         new object[] { "gpt-6-luna" },
         new object[] { "gpt-6-sol" },
         new object[] { "gpt-6.1-sol" },
+        new object[] { "gpt-6.2-astra" },
+        new object[] { "gpt-6.2-sol" },
         new object[] { "gpt-5.4-nano" },
         new object[] { "gpt-6.1-terra" },
         new object[] { "mai-code-2-flash" },
@@ -140,6 +142,8 @@ public class CodexRoutingAndCatalogTests
     [InlineData("gpt-6-luna",     "none,low,medium,high,xhigh,max", false, true)]
     [InlineData("gpt-6-sol",      "none,low,medium,high,xhigh,max", false, true)]
     [InlineData("gpt-6.1-sol",    "low,medium,high,xhigh,max", false, true)]
+    [InlineData("gpt-6.2-astra",  "low,medium,high,xhigh,max", false, true)]
+    [InlineData("gpt-6.2-sol",    "low,medium,high,xhigh,max", false, true)]
     [InlineData("gpt-5.4-nano",   "none,low,medium,high,xhigh", false, true)]
     [InlineData("gpt-6.1-terra",  "none,low,medium,high,xhigh,max", false, true)]
     [InlineData("mai-code-2-flash", "minimal,none,low,medium,high,xhigh,max", false, true)]
@@ -183,10 +187,10 @@ public class CodexRoutingAndCatalogTests
     }
 
     [Fact]
-    public void Catalog_HasAllSeventeenModels_AndUniformCoercions()
+    public void Catalog_HasAllNineteenModels_AndUniformCoercions()
     {
         var catalog = new CodexModelProfileCatalog();
-        Assert.Equal(17, catalog.Count);
+        Assert.Equal(19, catalog.Count);
         // The three uniform coercions are catalog-level facts (apply to every model).
         Assert.True(CodexModelProfileCatalog.StripsServiceTier);
         Assert.True(CodexModelProfileCatalog.StripsStoreTrue);

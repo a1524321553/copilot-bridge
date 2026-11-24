@@ -788,7 +788,24 @@ one request's state into another. The static routing helpers (`ModelRouteResolve
 `ProfileAdjuster`, `MatchExpression`) are not DI services; the injecting stage passes
 its context to them as an argument — the only place `ctx` still flows as a parameter.
 
-### 4.9 Codex model metadata control plane
+### 4.9 Model metadata control planes
+
+#### Live account discovery (`GET /v1/models`)
+
+The generic discovery route returns the active account's complete live Copilot
+`/models` response without filtering by vendor, endpoint, picker visibility, or
+bridge profile registration. It is an OpenAI-shaped discovery surface
+(`object` + `data`) for operators and generic clients that need to see every id
+Copilot currently advertises, including internal-only Responses models such as
+`gpt-5.6-sol-fast`.
+
+Discovery is not a compatibility promise. A returned id is usable only through
+one of its advertised `supported_endpoints`, and live capability metadata still
+requires endpoint-specific probes before the bridge adds request rewrites or
+native-client support. In particular, this raw list does not synthesize Codex
+instructions or make a model appear in the Codex picker.
+
+#### Codex-native picker catalog (`GET /codex/models`)
 
 Codex remote-model discovery is deliberately outside
 `Pipeline<MessagesRequest>`. It carries no prompt and performs no model
@@ -819,16 +836,19 @@ Ownership is strict:
   exact requesting version's official
   `openai/codex/rust-v{client_version}/codex-rs/models-manager/models.json`.
   Stable and prerelease identities are never shortened or substituted.
-  Four reviewed exceptions are embedded complete from pinned official
+  Six reviewed exceptions are embedded complete from pinned official
   `openai/codex` revisions: `gpt-6-luna` and `gpt-6-sol` from
   `8a3c4ea3b5a7c0e92cf24dae46ec87629a26bb7f` (minimum client `0.155.0`),
   and `gpt-6.1-sol` from `a20fe6335f960a350483d0079db2ec281c68202c`
   (minimum client `0.153.0`), plus `gpt-6.1-terra` from
-  `126a0ee92ed2c5e73cd8a8f7e37563e8527552d7` (minimum client `0.153.0`).
+  `126a0ee92ed2c5e73cd8a8f7e37563e8527552d7` (minimum client `0.153.0`), and
+  `gpt-6.2-astra`/`gpt-6.2-sol` from
+  `c376cf7396eff83ce4c6ac61b9553df142e7a0be` (minimum client `0.166.0`).
   They fill an absent exact slug in any selected
   baseline that has not yet incorporated the reviewed resource. A baseline's
   same-slug record always wins, so an official source can update the client-owned
-  record without a bridge release. The exact GPT-6.1 Sol/Terra picker effort list is
+  record without a bridge release. The exact GPT-6.1 Sol/Terra and GPT-6.2
+  Astra/Sol picker effort list is
   then filtered against its probed Copilot profile for either source: Ultra is
   removed while low, medium, high, xhigh, and max remain. This is a
   closed, digest-pinned exception: it does not turn live Copilot model discovery
@@ -836,7 +856,18 @@ Ownership is strict:
   the selected baseline uses the legacy top-level `base_instructions` shape,
   projection copies the official resource's exact
   `model_messages.instructions_template` string into that compatibility field
-  so pre-0.147 clients can deserialize the supplemented catalog.
+  so pre-0.147 clients can deserialize the supplemented catalog. One narrower
+  identity-only exception exists for Copilot's internal
+  `gpt-5.6-sol-fast`: when a validated live row advertises that exact id as
+  picker-enabled on `/responses`, and the selected official baseline contains a
+  complete `gpt-5.6-sol` resource but no same-slug fast resource, projection
+  clones the official Sol record and changes only `slug` and `display_name`.
+  The display name comes verbatim from live discovery; instructions, tools,
+  compatibility metadata, minimum client version, and every other Codex-owned
+  field remain the official Sol values. The fast row is inserted next to its
+  source, exposes only the live-probed low/medium/high/xhigh/max effort choices,
+  and follows the normal exact-route/live-limit projection. A future official
+  same-slug fast record wins and suppresses this alias.
 - **The request proves the source identity.** Codex's model manager intentionally
   truncates prerelease `client_version` to `major.minor.patch`, while its
   `User-Agent` retains the complete `Codex Desktop/{version}`,
@@ -859,12 +890,13 @@ Ownership is strict:
   A full output reserve that cannot fit leaves the existing positive percentage
   policy in effect without hiding a valid model or alias. Invalid or missing
   limits do not raise the validated exact-version baseline.
-- **The bridge owns the safe join.** Apart from the three explicitly reviewed,
-  digest-pinned supplements above, live-only models are never synthesized,
-  retired/baseline-only models are hidden, and review overrides are retained
-  only when their target remains routable. `gpt-5.6-sol-fast` is the current
-  example: explicit inference is supported, while `/codex/models` omits it until
-  an exact official Codex catalog supplies the client-owned instruction record.
+- **The bridge owns the safe join.** Apart from the four explicitly reviewed,
+  digest-pinned supplements and the identity-only Sol Fast alias above,
+  live-only models are never synthesized, retired/baseline-only models are
+  hidden, and review overrides are retained only when their target remains
+  routable. The Sol Fast exception is fail-closed: no validated picker-enabled
+  live row, no `/responses` endpoint, no official Sol source, or no non-empty
+  live display name means no alias row.
 
 `CodexCatalogOverlayService` is a singleton, single-flight, five-minute successful-
 overlay cache. A refresh failure serves its stale last known good overlay; a cold
@@ -1899,20 +1931,23 @@ typo can't produce silent 401s. Identity-header overrides thread through
 `BridgeContext.CopilotHeaderOverrides` into `CopilotHeaderFactory`;
 `anthropic-beta` add/remove flows through `HeadersOutboundStage`.
 
-Today's `appsettings.json` ships one active exact-model compatibility route plus
-an alternative disabled Claude Code → GPT example:
+Today's `appsettings.json` ships no active text-model rewrite plus an alternative
+disabled Claude Code → GPT example:
 
-| `When` model | `Use.Model` | `Use.EffortMap` | State |
-| --- | --- | --- | --- |
-| `gpt-5.6-sol` | `gpt-6-astra` | `none` → `low`, `minimal` → `low` | active on fresh installs |
-| `claude-opus-5.5` | `gpt-5.6-sol` | `max` → `xhigh` | `_Locations_disabled` alternative |
+| Configuration | Target behavior | State |
+| --- | --- | --- |
+| `Locations: []` | Exact official model identities remain direct | active on fresh installs |
+| `claude-opus-5.5 → gpt-5.6-sol` with `max → xhigh` | Cross-protocol model substitution | `_Locations_disabled` alternative |
 
 Note:
-- The active route keeps the reviewed `gpt-5.6-sol` Codex client catalog identity
-  while resolving upstream to Astra. Live probes establish Astra's narrower effort
-  set and 1,000,000/872,000 Copilot context/prompt limits; catalog projection uses
-  those target limits under the source slug. Config migration preserves an existing
-  installation's complete Locations array, so upgrades opt in by adding the block.
+- The empty active array keeps the reviewed `gpt-5.6-sol` Codex client catalog
+  identity direct and visible when the live account exposes it. Operators can still
+  configure a `gpt-5.6-sol → gpt-6-astra` alias explicitly; route-aware catalog
+  projection then uses Astra's target limits under the source slug and hides the
+  alias when validated target limits are not safely mappable.
+- Config migration preserves an existing installation's complete Locations array,
+  so older installations that already contain the Astra alias retain it until the
+  operator clears the array.
 - The alternative example routes Claude Code's `claude-opus-5-5` to the reviewed
   Codex client model `gpt-5.6-sol`. The `EffortMap max→xhigh` is an **optional down-tier**:
   unlike gpt-5.5, gpt-5.6-sol (the "xlarge" effort profile) accepts `max`
@@ -2029,6 +2064,19 @@ Codex resources exist. Listed `gpt-5.6-luna-utility` returns integrator-unavaila
 400. Backend routing and passthrough are distinct from the native Codex-to-GPT
 compatibility promise; endpoint discovery alone establishes neither contract.
 Administrator-disabled Claude models were not probed or changed.
+
+The 2026-11-20 reconciliation brings the Responses catalog to **19 exact
+profiles**, adding `gpt-6.2-astra` and `gpt-6.2-sol`.
+`ResponsesProbe.Gpt62_CandidateContracts_Probe` establishes
+low/medium/high/xhigh/max acceptance, none/minimal/ultra rejection, function/
+custom grammar/web-search support, and structured image function output.
+Rejected efforts fall back to low; the three existing uniform field/tool
+rejections remain. Targeted live B2/B3 checks and exact-model streaming client
+replays guard these facts. Complete pinned official model resources supplement
+missing same-slug baselines; Ultra is filtered for both supplemental and newer
+baseline rows. Inconsistent live total/prompt/output limits retain reviewed
+official context and compaction metadata. New discovery ids do not bypass exact
+route/profile registration or manufacture client-owned resources.
 
 1. Run `tests/CopilotBridge.Playground/CopilotGapProbes.DumpClaudeModelsAndCapabilities`
    to see what Copilot exposes on the current account.

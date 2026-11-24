@@ -32,12 +32,12 @@ internal static class ClientBehaviorSupport
     /// <summary>Newest Claude id under behavior test (native <c>/cc</c>).</summary>
     public const string LatestClaude = "claude-opus-5-5";
 
-    /// <summary>Newest reviewed Codex client-catalog identity under behavior test.
-    /// The stock compatibility route resolves this id to <see cref="LatestGptBackend"/>.</summary>
+    /// <summary>Newest reviewed Codex client-catalog identity and stock direct backend
+    /// under behavior test.</summary>
     public const string LatestGpt = "gpt-5.6-sol";
 
-    /// <summary>Newest live Copilot Responses backend, exercised through the
-    /// stock <c>gpt-5.6-sol</c> compatibility route.</summary>
+    /// <summary>Live Copilot Responses backend exercised by the explicit
+    /// <see cref="ServeScenario.Gpt56ToAstra"/> scenario.</summary>
     public const string LatestGptBackend = "gpt-6-astra";
 
     /// <summary>Reviewed Codex app-server build used by the behavior flywheel.</summary>

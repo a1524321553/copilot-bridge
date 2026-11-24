@@ -30,6 +30,13 @@ public sealed class CodexModelCatalogContractTests
         "auto_review_model_override",
     };
 
+    private static readonly HashSet<string> FastAliasProjectedProperties = new(BackendOwnedProperties, StringComparer.Ordinal)
+    {
+        "slug",
+        "display_name",
+        "supported_reasoning_levels",
+    };
+
     [Fact]
     public void CapturedOfficialFixtureIsACompleteExactVersionBaseline()
     {
@@ -214,6 +221,128 @@ public sealed class CodexModelCatalogContractTests
         Assert.Equal(["low", "medium", "high", "xhigh", "max"], offered);
         Assert.DoesNotContain("ultra", offered);
         Assert.Equal("low", model.GetProperty("default_reasoning_level").GetString());
+    }
+
+    [Fact]
+    public void LiveSolFastDerivesOneVisiblePickerRowFromTheCompleteOfficialSolResource()
+    {
+        var baseline = LoadBaseline();
+        var source = Find(baseline.Models, "gpt-5.6-sol");
+        var result = Project(
+            baseline,
+            [Live(
+                "gpt-5.6-sol-fast",
+                1_050_000,
+                922_000,
+                128_000,
+                name: "GPT-5.6 Sol Fast (Internal only)",
+                pickerEnabled: true)]);
+        var alias = Assert.Single(
+            result.Models,
+            model => model.GetProperty("slug").GetString() == "gpt-5.6-sol-fast");
+
+        var solIndex = result.Models
+            .Select((model, index) => (model, index))
+            .Single(pair => pair.model.GetProperty("slug").GetString() == "gpt-5.6-sol")
+            .index;
+        var fastIndex = result.Models
+            .Select((model, index) => (model, index))
+            .Single(pair => IsFast(pair.model))
+            .index;
+        Assert.Equal(solIndex + 1, fastIndex);
+        Assert.Equal("GPT-5.6 Sol Fast (Internal only)", alias.GetProperty("display_name").GetString());
+        Assert.True(alias.GetProperty("supported_in_api").GetBoolean());
+        Assert.Equal("list", alias.GetProperty("visibility").GetString());
+        Assert.Equal(1_050_000, alias.GetProperty("context_window").GetInt32());
+        Assert.Equal(1_050_000, alias.GetProperty("max_context_window").GetInt32());
+        Assert.Equal(778_000, alias.GetProperty("auto_compact_token_limit").GetInt32());
+        Assert.Equal(
+            ["low", "medium", "high", "xhigh", "max"],
+            alias.GetProperty("supported_reasoning_levels").EnumerateArray()
+                .Select(level => level.GetProperty("effort").GetString()!)
+                .ToArray());
+
+        foreach (var property in source.EnumerateObject().Where(
+                     property => !FastAliasProjectedProperties.Contains(property.Name)))
+        {
+            Assert.True(
+                alias.TryGetProperty(property.Name, out var actual),
+                $"Fast alias dropped Codex property '{property.Name}'.");
+            Assert.True(
+                JsonElement.DeepEquals(property.Value, actual),
+                $"Fast alias changed Codex property '{property.Name}'.");
+        }
+    }
+
+    [Fact]
+    public void SolFastAliasFailsClosedWithoutCompleteValidatedPickerEvidence()
+    {
+        var baseline = LoadBaseline();
+        var validLive = Live(
+            "gpt-5.6-sol-fast",
+            1_050_000,
+            922_000,
+            128_000,
+            name: "GPT-5.6 Sol Fast (Internal only)",
+            pickerEnabled: true);
+
+        Assert.DoesNotContain(Project(baseline, []).Models, IsFast);
+        Assert.DoesNotContain(Project(
+            baseline,
+            [validLive with { ModelPickerEnabled = false }]).Models, IsFast);
+        Assert.DoesNotContain(Project(
+            baseline,
+            [validLive with { Name = null }]).Models, IsFast);
+        Assert.DoesNotContain(Project(
+            baseline,
+            [validLive with { SupportedEndpoints = ["/v1/messages"] }]).Models, IsFast);
+        Assert.DoesNotContain(Project(
+            baseline with
+            {
+                Models = [.. baseline.Models.Where(model =>
+                    model.GetProperty("slug").GetString() != "gpt-5.6-sol")],
+            },
+            [validLive]).Models, IsFast);
+
+        var projector = new CodexCatalogProjector(
+            new CodexModelProfileCatalog(),
+            new CopilotModelRegistry(),
+            NullLogger<CodexCatalogProjector>.Instance);
+        var unvalidated = projector.Project(
+            Version(baseline.SourceVersion),
+            baseline,
+            [validLive],
+            liveOverlayValidated: false);
+        Assert.DoesNotContain(unvalidated.Models, IsFast);
+    }
+
+    [Fact]
+    public void OfficialSameSlugSolFastResourceWinsWithoutDuplication()
+    {
+        var baseline = LoadBaseline();
+        var officialFast = ReplaceProperty(
+            ReplaceProperty(
+                ReplaceProperty(Find(baseline.Models, "gpt-5.6-sol"), "slug", "gpt-5.6-sol-fast"),
+                "display_name",
+                "Official Sol Fast"),
+            "description",
+            "official same-slug metadata");
+        var newerBaseline = baseline with { Models = [.. baseline.Models, officialFast] };
+
+        var result = Project(
+            newerBaseline,
+            [Live(
+                "gpt-5.6-sol-fast",
+                1_050_000,
+                922_000,
+                128_000,
+                name: "Live name must not replace official metadata",
+                pickerEnabled: true)]);
+        var model = Assert.Single(result.Models, IsFast);
+
+        Assert.Equal("Official Sol Fast", model.GetProperty("display_name").GetString());
+        Assert.Equal("official same-slug metadata", model.GetProperty("description").GetString());
+        Assert.True(model.GetProperty("supported_in_api").GetBoolean());
     }
 
     [Theory]
@@ -686,10 +815,22 @@ public sealed class CodexModelCatalogContractTests
         return document.RootElement.Clone();
     }
 
-    private static CopilotModel Live(string id, int? total, int? prompt, int? output) => new()
+    private static bool IsFast(JsonElement model) =>
+        model.GetProperty("slug").GetString() == "gpt-5.6-sol-fast";
+
+    private static CopilotModel Live(
+        string id,
+        int? total,
+        int? prompt,
+        int? output,
+        string? name = null,
+        bool pickerEnabled = false,
+        IReadOnlyList<string>? supportedEndpoints = null) => new()
     {
         Id = id,
-        SupportedEndpoints = ["/responses"],
+        Name = name,
+        ModelPickerEnabled = pickerEnabled,
+        SupportedEndpoints = supportedEndpoints ?? ["/responses"],
         Capabilities = new CopilotModelCapabilities
         {
             Limits = new CopilotModelLimits

@@ -2,6 +2,7 @@ using CopilotBridge.Cli.Auth;
 using CopilotBridge.Cli.Endpoints.ClaudeCode;
 using CopilotBridge.Cli.Endpoints.Codex;
 using CopilotBridge.Cli.Endpoints.Images;
+using CopilotBridge.Cli.Endpoints.OpenAI;
 using CopilotBridge.Cli.Hosting.Options;
 using CopilotBridge.Cli.Update;
 using Microsoft.AspNetCore.Builder;
@@ -84,6 +85,7 @@ internal static class ServeCommand
         app.MapMessages();
         app.MapCountTokens();
         app.MapModels();
+        app.MapOpenAiModels();
         app.MapCodexModels();
         app.MapCodexResponses();
         app.MapImages();

@@ -1,17 +1,15 @@
 using CopilotBridge.Cli.Models.Anthropic.Request;
 using CopilotBridge.Cli.Pipeline;
 using CopilotBridge.Cli.Pipeline.Routing;
-using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace CopilotBridge.UnitTests;
 
 /// <summary>
-/// Contract for the stock flagship compatibility route. Assertions name the
-/// required source and target directly; the appsettings document is input, not
-/// an implementation oracle.
+/// Contract for the optional gpt-5.6-sol to gpt-6-astra compatibility route.
+/// The route is explicit input rather than a stock-configuration default.
 /// </summary>
-public sealed class Gpt6AstraStockRoutingTests
+public sealed class Gpt6AstraExplicitRoutingTests
 {
     [Theory]
     [InlineData("none", "low")]
@@ -21,10 +19,12 @@ public sealed class Gpt6AstraStockRoutingTests
     [InlineData("high", "high")]
     [InlineData("xhigh", "xhigh")]
     [InlineData("max", "max")]
-    public void StockRoute_MapsFlagshipToAstraWithRequiredEffort(string inbound, string expected)
+    public void ExplicitRoute_MapsFlagshipToAstraWithRequiredEffort(
+        string inbound,
+        string expected)
     {
         var ctx = Context("gpt-5.6-sol", inbound);
-        var target = CountTokensTestServices.Planner(LoadStockRoutes()).Plan(ctx);
+        var target = CountTokensTestServices.Planner(ExplicitAstraRoutes()).Plan(ctx);
 
         Assert.Equal(BackendVendor.CopilotResponses, target.Vendor);
         Assert.Equal("/responses", target.Endpoint);
@@ -37,21 +37,33 @@ public sealed class Gpt6AstraStockRoutingTests
     [InlineData("gpt-5.6-luna")]
     [InlineData("gpt-5.6-sol-fast")]
     [InlineData("gpt-5.6-terra")]
-    public void StockRoute_DoesNotCollapseOtherGpt56Tiers(string model)
+    public void ExplicitRoute_DoesNotCollapseOtherGpt56Tiers(string model)
     {
-        var target = CountTokensTestServices.Planner(LoadStockRoutes()).Plan(Context(model, "max"));
+        var target = CountTokensTestServices.Planner(ExplicitAstraRoutes())
+            .Plan(Context(model, "max"));
 
         Assert.Equal(model, target.ModelId);
     }
 
-    private static RoutesConfig LoadStockRoutes()
+    private static RoutesConfig ExplicitAstraRoutes() => new()
     {
-        var path = FindRepoFile("src", "CopilotBridge.Cli", "appsettings.json");
-        var config = new ConfigurationBuilder().AddJsonFile(path, optional: false).Build();
-        var routes = new RoutesConfig();
-        config.GetSection("Routing").Bind(routes);
-        return routes;
-    }
+        Locations =
+        [
+            new RouteLocation
+            {
+                When = new MatchExpression { Model = "gpt-5.6-sol" },
+                Use = new LocationUse
+                {
+                    Model = "gpt-6-astra",
+                    EffortMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["none"] = "low",
+                        ["minimal"] = "low",
+                    },
+                },
+            },
+        ],
+    };
 
     private static BridgeContext<MessagesRequest> Context(string model, string effort) => new()
     {
@@ -69,14 +81,4 @@ public sealed class Gpt6AstraStockRoutingTests
         },
         Response = new BridgeResponse(),
     };
-
-    private static string FindRepoFile(params string[] parts)
-    {
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
-        {
-            var path = Path.Combine([dir.FullName, .. parts]);
-            if (File.Exists(path)) return path;
-        }
-        throw new FileNotFoundException("Could not locate repository appsettings.json.");
-    }
 }

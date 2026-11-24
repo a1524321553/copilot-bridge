@@ -66,16 +66,19 @@
 - **Codex Sol Fast is 1M-class on Copilot**: the internal-only
   `gpt-5.6-sol-fast` id advertises 1,050,000 total / 922,000 prompt / 128,000
   output tokens, and a real Codex-shaped request reported 310,465 input tokens
-  with HTTP 200. Select it explicitly; it is absent from the official Codex
-  catalog and the bridge does not invent a model-catalog entry for it.
+  with HTTP 200. It is absent from the official Codex catalog, but validated
+  picker-enabled live discovery activates the bridge's controlled alias from
+  the complete official Sol resource. The projected row therefore advertises
+  1,050,000 context and auto-compaction at 778,000 tokens.
 - **Astra's current discovery hint is internally inconsistent**: historical direct
   probes established 1,000,000 total / 872,000 prompt / 128,000 output, but those
   measurements are not a guarantee of the current catalog projection. The
   documented `/models` hint reports 1,050,000 prompt plus 128,000 output inside
   1,050,000 total. A direct Astra catalog entry therefore retains its reviewed
-  baseline resource. The fresh-install `gpt-5.6-sol -> gpt-6-astra` alias is hidden
-  from a validated catalog while its target limits cannot map safely; it does not
-  inherit literal Sol's 778,000 threshold. Missing live-overlay data follows the
+  baseline resource. Fresh installs keep `gpt-5.6-sol` direct with its validated
+  778,000 threshold. An explicitly configured `gpt-5.6-sol -> gpt-6-astra` alias
+  is hidden from a validated catalog while its target limits cannot map safely; it
+  never inherits literal Sol's threshold. Missing live-overlay data follows the
   separate reviewed-baseline degradation contract.
 - **GPT-6 Luna and Sol use Copilot's 1M-class deployment**: live Copilot reports
   1,000,000 total / 872,000 prompt / 128,000 output for both exact ids, and a
@@ -105,6 +108,16 @@
   resource's 500,000 context / 872,000 maximum context / null explicit compaction
   threshold until coherent live limits permit the normal uplift. All are
   discovery metadata, not near-limit prompt admission results.
+
+- **GPT-6.2 Astra/Sol (2026-11-20):** both advertise 1,050,000 total /
+  1,050,000 prompt / 128,000 output tokens on Copilot discovery. These limits
+  are inconsistent, so `/codex/models` retains their pinned official resources:
+  Astra has 272,000 context / 872,000 maximum context; Sol has 500,000 context /
+  872,000 maximum context. Both retain null explicit auto-compaction thresholds.
+  Coherent future live limits can enable the normal uplift. These are discovery/
+  catalog values, not near-limit prompt admission results. Exact Responses
+  profiles and complete official picker resources support both ids, with
+  low/medium/high/xhigh/max reasoning and official minimum client version 0.166.0.
 
 ## 1. Where the context window comes from — the client, not the server
 

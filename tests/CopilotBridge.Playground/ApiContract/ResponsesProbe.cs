@@ -58,6 +58,8 @@ public partial class ResponsesProbe
         "gpt-6-luna",
         "gpt-6-sol",
         "gpt-6.1-sol",
+        "gpt-6.2-astra",
+        "gpt-6.2-sol",
         "gpt-5.4-nano",
         "gpt-6.1-terra",
         "mai-code-2-flash",

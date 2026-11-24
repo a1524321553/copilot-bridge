@@ -238,6 +238,22 @@ internal sealed class CodexModelProfileCatalog
             SupportsMultimodalFunctionOutput = true,
         };
 
+        // Gpt62_CandidateContracts_Probe (2026-11-20): both exact ids accept
+        // low/medium/high/xhigh/max and reject none/minimal/ultra. Function,
+        // custom grammar and web-search tools are accepted; store:true,
+        // service_tier and image_generation retain the uniform rejections.
+        // The two-turn structured image-output probe returned 200/200 and red.
+        // Low is the deliberate least-expensive accepted fallback. Live B2/B3
+        // and exact-model captured replays guard every rewrite-driving fact.
+        foreach (var model in new[] { "gpt-6.2-astra", "gpt-6.2-sol" })
+            yield return new CodexModelProfile
+            {
+                CanonicalId = model,
+                AcceptedEfforts = ["low", "medium", "high", "xhigh", "max"],
+                DefaultEffort = "low",
+                SupportsMultimodalFunctionOutput = true,
+            };
+
         // October2026_CandidateContracts_Probe (2026-10-27) uses the same
         // per-model effort/field/tool/image-output probes as the B2/B3 sweep.
         // Nano accepts none/low/medium/high/xhigh; minimal/max/ultra are rejected.

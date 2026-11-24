@@ -44,11 +44,27 @@ public sealed class CodexCatalogSnapshotContractTests
         }
 
         Assert.Equal(400_000, Find(projected.Models, "gpt-5.4-mini").GetProperty("context_window").GetInt32());
-        Assert.DoesNotContain(projected.Models,
+        var sol = Find(projected.Models, "gpt-5.6-sol");
+        var fast = Assert.Single(
+            projected.Models,
             model => model.GetProperty("slug").GetString() == "gpt-5.6-sol-fast");
+        Assert.Equal("GPT-5.6 Sol Fast (Internal only)", fast.GetProperty("display_name").GetString());
+        Assert.True(fast.GetProperty("supported_in_api").GetBoolean());
+        Assert.Equal("list", fast.GetProperty("visibility").GetString());
+        Assert.Equal(1_050_000, fast.GetProperty("context_window").GetInt32());
+        Assert.Equal(778_000, fast.GetProperty("auto_compact_token_limit").GetInt32());
+        Assert.Equal(
+            ["low", "medium", "high", "xhigh", "max"],
+            fast.GetProperty("supported_reasoning_levels").EnumerateArray()
+                .Select(level => level.GetProperty("effort").GetString()!)
+                .ToArray());
+        Assert.Equal(
+            sol.GetProperty("base_instructions").GetString(),
+            fast.GetProperty("base_instructions").GetString());
 
         // Mutate only one captured capability axis at a time. Missing/inconsistent
-        // live limits keep reviewed values, a retired model is hidden, and a
+        // live limits keep reviewed values, incomplete Fast picker evidence
+        // suppresses its alias, a retired model is hidden, and an unrelated
         // future live-only slug is never synthesized.
         var missing = Mutate(snapshot, "gpt-5.4", model =>
             model["capabilities"]!["limits"]!.AsObject().Remove("max_prompt_tokens"));
@@ -67,6 +83,16 @@ public sealed class CodexCatalogSnapshotContractTests
         Assert.Equal(
             Find(reviewedBaseline.Models, "gpt-5.6-luna").GetProperty("context_window").GetInt32(),
             Find(Project(missingOutput).Models, "gpt-5.6-luna").GetProperty("context_window").GetInt32());
+
+        var pickerDisabled = Mutate(snapshot, "gpt-5.6-sol-fast", model =>
+            model["model_picker_enabled"] = false);
+        Assert.DoesNotContain(Project(pickerDisabled).Models,
+            model => model.GetProperty("slug").GetString() == "gpt-5.6-sol-fast");
+
+        var inconsistentFast = Mutate(snapshot, "gpt-5.6-sol-fast", model =>
+            model["capabilities"]!["limits"]!["max_prompt_tokens"] = 1_050_001);
+        Assert.DoesNotContain(Project(inconsistentFast).Models,
+            model => model.GetProperty("slug").GetString() == "gpt-5.6-sol-fast");
 
         var retired = snapshot.Where(model => model.Id != "gpt-5.6-sol").ToArray();
         var retiredEntry = Find(Project(retired).Models, "gpt-5.6-sol");

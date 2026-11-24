@@ -67,11 +67,13 @@ for win-x64, win-arm64, linux-x64, and osx-arm64.
   `claude-opus-5.5`; Claude Code's `claude-opus-5-5` normalizes to that id.
   Other Claude ids returned `model_not_supported` on the account used for the
   September 2026 sync. Codex runs on Copilot's gpt-5.x plus **GPT-6 Astra,
-  Luna, and Sol**. Fresh installs route the
-  reviewed `gpt-5.6-sol` Codex client identity to `gpt-6-astra`; the gpt-5.6 profiles remain
+  Luna, and Sol**, including the latest **GPT-6.2 Astra and Sol**. Fresh installs
+  keep the reviewed `gpt-5.6-sol` Codex client
+  identity direct, so its official catalog row remains visible. The gpt-5.6 profiles are
   (`gpt-5.6-luna` / `gpt-5.6-sol` / `gpt-5.6-sol-fast` /
-  `gpt-5.6-terra`), with Luna/Terra/Sol Fast direct and Sol restored to direct by
-  clearing the route. Exact `gpt-6-luna` and `gpt-6-sol` are also available to
+  `gpt-5.6-terra`); the internal Sol Fast id is projected as its own picker row
+  when the active Copilot account advertises it as picker-enabled.
+  Exact `gpt-6-luna` and `gpt-6-sol` are also available to
   Codex through reviewed official catalog supplements whenever the selected
   client catalog does not yet contain those exact slugs.
   Live model-catalog discovery replaces Codex's older bundled context ceiling.
@@ -241,19 +243,38 @@ the lower percentage ceilings and whole-thousand rounding. Output-heavy small
 windows that cannot fit the reserve keep the existing positive percentage policy.
 Explicit user context overrides are preserved and may select a smaller window.
 
-The shipped `gpt-5.6-sol -> gpt-6-astra` location is an **alias**, so the direct-Sol
-778,000 example does not describe that default route. Its catalog limits come from
-Astra's validated target metadata. If the validated target limits are missing or
-internally inconsistent, the alias is hidden rather than advertised with Sol's
-capacity; direct Astra selection retains its reviewed baseline resource in that
-case. See [routing configuration](docs/routing.md).
+The shipped configuration keeps `gpt-5.6-sol` direct, so this 778,000 threshold
+also describes its default picker row. If an operator intentionally configures a
+cross-model alias such as `gpt-5.6-sol -> gpt-6-astra`, catalog limits instead come
+from the resolved target. Missing or internally inconsistent target limits hide the
+alias rather than advertising the source model's capacity. See
+[routing configuration](docs/routing.md).
 
 Copilot reports the same live limits for `gpt-5.6-sol-fast` and labels it
-**Internal only**. The bridge accepts it when selected explicitly
-(`codex exec -m gpt-5.6-sol-fast ...` or
-`model = "gpt-5.6-sol-fast"`), but does not synthesize it into `/codex/models`:
-that endpoint preserves complete model behavior only from the exact official
-Codex catalog, which does not currently publish the internal slug.
+**Internal only**. The official Codex catalog does not currently publish that
+exact slug, so the bridge exposes one controlled picker alias: only when
+validated live discovery advertises the exact id as picker-enabled on
+`/responses`, it clones the complete official `gpt-5.6-sol` resource and changes
+only the slug and live display name. Instructions, tools, compatibility metadata,
+and minimum client version remain official Sol values; context and availability
+come from the exact live Fast deployment. The picker offers
+low/medium/high/xhigh/max reasoning. Missing or inconsistent live evidence omits
+the alias, and a future official same-slug resource wins without duplication.
+Explicit selection (`codex exec -m gpt-5.6-sol-fast ...` or
+`model = "gpt-5.6-sol-fast"`) remains supported.
+
+To inspect the complete model-discovery response for the active Copilot account
+while the bridge is running:
+
+```pwsh
+Invoke-RestMethod http://localhost:8765/v1/models | ConvertTo-Json -Depth 20
+```
+
+`GET /v1/models` returns Copilot's live discovery payload without filtering by
+vendor, supported endpoint, `model_picker_enabled`, or Codex catalog metadata.
+Discovery does not by itself promise client compatibility: `/codex/models`
+remains the stricter Codex picker catalog, while `/v1/models` answers which
+models the current account and policy expose.
 
 `gpt-6.1-sol` is available for direct selection and is also included in the
 bridge's reviewed supplemental Codex catalog. Some installed Codex builds omit
@@ -272,6 +293,16 @@ catalog predates it, with low/medium/high/xhigh/max reasoning (Ultra is rejected
 by Copilot). Nano and MAI 2 can be selected explicitly; no complete official
 Codex resource was found for either, so the bridge does not invent picker
 entries. `gpt-5.6-luna-utility` is unavailable to `vscode-chat`.
+
+`gpt-6.2-astra` and `gpt-6.2-sol` have exact Responses profiles and Codex picker
+support (2026-11-20). Both offer low/medium/high/xhigh/max reasoning; Copilot
+rejects Ultra, so it is removed from projected picker metadata. Complete official
+resources are pinned to `openai/codex` commit
+`c376cf7396eff83ce4c6ac61b9553df142e7a0be` and fill missing client catalogs,
+including the bundled fallback; newer same-slug official records retain precedence.
+Their official minimum client version is 0.166.0. Restart Codex after deploying
+the updated bridge to refresh the picker. Discovery alone does not automatically
+register new bridge profiles or Responses routes.
 
 **Or do it by hand** — edit `~/.codex/config.toml`, set the default model +
 provider at the top and add the provider block:
@@ -339,16 +370,18 @@ only touch it to tune. Each detector row is toggled by its own `Enabled` flag
 | **`Pipeline:Detectors:RunawayGuard`** | on | Circuit-breaker for degenerate output; forces a retryable `overloaded_error`. Thresholds: `MaxDeltaBytes` (12 MiB), `MaxDeltaCount` (20000), `RepetitionWindow`/`RepetitionMinUniqueRatio` (500 / 0.05), `RepetitionMaxConsecutiveRepeat` (50). Fix a false trip by **raising** the threshold, not disabling. |
 | **`Pipeline:UpstreamTimeout`** | on | Exact independent bridge values: `FirstByteTimeoutSeconds` (240) bounds response headers per send; `StreamIdleTimeoutSeconds` (240) bounds each parsed upstream SSE event gap; `KeepAliveIntervalSeconds` (15) schedules downstream pings after the first upstream event. `<= 0` disables that timer. No margin, clamp, fallback, coarse HTTP cap, or client-config rewrite is applied. `StreamIdleAction` (`Retry`/`Truncate`) and `StreamIdleSignal` (`OverloadedError`/`ApiError`) govern mid-stream surfacing. See [Long-thinking timeouts](#long-thinking-timeouts). |
 | **`Pipeline:Detectors:ToolInputValidation`** | observe-only | Validates `tool_use` input against the tool schema and flags `tool_input_invalid=true`, but does **not** abort — Claude Code self-heals. Set `MalformedJsonAction` / `SchemaViolationAction` to `AbortOverloaded`/`AbortApiError` only for a backend that doesn't; `PreserveStream` then picks delta-before-error (`true`) vs buffer-for-a-real-HTTP-error (`false`). |
-| **`Routing.Locations`** | `gpt-5.6-sol → gpt-6-astra` | nginx-style per-request model/header rewrites. Fresh installs use Astra for the flagship Codex identity and map legacy `none`/`minimal` effort to `low`; upgraded installations retain their existing whole array. See below. |
+| **`Routing.Locations`** | `[]` | nginx-style per-request model/header rewrites. Fresh installs keep official model identities direct; upgraded installations retain their existing whole array. See below. |
 
 Catalog resolution is visible in the always-on bridge log as one structured line
 containing the exact version, `cache=memory|disk|source-200|source-304|stale`,
 freshness, source/validation outcome, elapsed time, and abbreviated digest/ETag.
 Catalog bodies and GitHub/Copilot authorization values are never logged.
 
-**`Routing.Locations`** on a fresh install routes the exact flagship client identity
-to Astra. OpenAI's migration guide and live Copilot agree that Astra rejects
-`none`/`minimal`, so both map to `low`; the other accepted efforts pass unchanged:
+**`Routing.Locations`** is empty on a fresh install, so exact client identities such
+as `gpt-5.6-sol` route directly and remain eligible for their official Codex picker
+rows. To intentionally use the Sol identity as an Astra alias, add this location.
+OpenAI's migration guide and live Copilot agree that Astra rejects `none`/`minimal`,
+so both map to `low`; the other accepted efforts pass unchanged:
 
 ```jsonc
 {
@@ -360,15 +393,15 @@ to Astra. OpenAI's migration guide and live Copilot agree that Astra rejects
 }
 ```
 
-Luna, Terra, and Sol Fast remain direct. Update config migration preserves the
-existing complete Locations array, so an upgraded installation with `[]` must add
-this block explicitly. The alternative disabled `_Locations_disabled` example still
-shows Claude Code → GPT routing; replace the active array or merge that entry if you
-want both. Full syntax is in [`docs/routing.md`](docs/routing.md).
+Update config migration preserves the existing complete Locations array. An older
+installation that already contains this alias therefore keeps it until the operator
+clears the array, while a direct install must add the block explicitly to opt in.
+The disabled `_Locations_disabled` example still shows Claude Code → GPT routing;
+replace the active array or copy that entry into it. Full syntax is in
+[`docs/routing.md`](docs/routing.md).
 
-The disabled example matches `claude-opus-5.5` after the client id is normalized.
-It targets `gpt-5.6-sol` directly; Locations are first-match-wins and do not
-chain through the stock GPT-5.6 → Astra rule.
+The disabled example matches `claude-opus-5.5` after the client id is normalized
+and targets `gpt-5.6-sol` directly.
 
 ## Long-thinking timeouts
 

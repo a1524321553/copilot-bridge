@@ -225,15 +225,21 @@ Change: route the Codex/Responses model ids (`gpt-5.3-codex`, `gpt-5.4`,
 > (`gpt-5.6-luna` / `gpt-5.6-sol` / `gpt-5.6-sol-fast` / `gpt-5.6-terra`). The
 > routed set also includes exact `gpt-6-astra`, `gpt-6-luna`, `gpt-6-sol`,
 > `gpt-6.1-sol`, and exact `mai-code-1.1-flash`;
-> fresh installs keep the current Codex
-> catalog identity by routing `gpt-5.6-sol` to Astra in `Routing.Locations`.
+> fresh installs keep exact client catalog identities direct, including
+> `gpt-5.6-sol`. Operators can opt into a Sol-to-Astra alias in
+> `Routing.Locations`.
 > `CopilotModelRegistry.ResponsesModelIds` allowlist is the source of truth;
 > membership is still an explicit list, never a `gpt-` prefix takeover.
 
 `gpt-5.6-sol-fast` is Copilot-only and marked "Internal only" in live metadata.
-It is supported for explicit model selection, but is not synthesized into
-`GET /codex/models` while the exact official Codex catalog omits the slug; the
-metadata control plane deliberately never invents Codex-owned instructions.
+It remains supported for explicit model selection and now has one controlled
+`GET /codex/models` exception. When validated discovery exposes the exact id as
+picker-enabled on `/responses`, the projector clones the complete official
+`gpt-5.6-sol` resource, changing only `slug` and `display_name`; every
+Codex-owned behavior field remains official Sol metadata. The alias uses exact
+Fast live limits and filters picker effort to the probed
+low/medium/high/xhigh/max set. Missing evidence fails closed, and a future
+official same-slug record wins without duplication.
 
 The router runs once, on the IR, in the shared `Pipeline<MessagesRequest>`. It is
 **backend-agnostic by construction** — it keys off the resolved model id, not the
@@ -319,7 +325,7 @@ verified during implementation (was Q5).
   still bounded by the existing total/prompt percentages and rounded down).
   If the full reserve cannot leave at least 1,000 tokens, keep the existing
   positive percentage policy and model availability. These examples apply to
-  direct routes with those validated target capacities. The shipped
+  direct routes with those validated target capacities. An explicitly configured
   `gpt-5.6-sol -> gpt-6-astra` alias uses Astra limits instead; a validated alias
   with missing or incoherent target limits remains hidden.
 - The reviewed supplemental Codex catalog includes a complete, provenance-pinned
@@ -333,6 +339,12 @@ verified during implementation (was Q5).
   it; the projection removes Ultra from the offered effort list for this exact
   id in both supplemental and same-slug baseline records, preserving the pinned
   source bytes. The picker offers low, medium, high, xhigh, and max.
+- The internal `gpt-5.6-sol-fast` picker row is an identity-only exception, not
+  a general live-model synthesis rule. A validated picker-enabled `/responses`
+  row with coherent limits may clone the selected official `gpt-5.6-sol`
+  resource, changing only its slug and live display name. The exact Fast profile
+  filters effort to low, medium, high, xhigh, and max. Without that complete
+  join the row is absent; an official same-slug baseline always takes precedence.
 - `config codex` manages `[model_providers.copilot-bridge.auth]`. Its hidden
   `auth provider-token` command prints a stable public sentinel; the real
   GitHub/Copilot credential remains exclusively inside `AuthService`.
