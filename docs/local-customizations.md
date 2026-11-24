@@ -6,6 +6,13 @@ Use `codex/local-customizations` for local work. The upstream repository is
 `https://github.com/hooyao/copilot-bridge`; do not commit local changes directly
 on `main` or work from a detached HEAD.
 
+The personal fork is `https://github.com/a1524321553/copilot-bridge`.
+`origin` points to this fork for pushing local branches; `upstream` points to
+`hooyao/copilot-bridge` for fetching original-project changes. The maintenance
+branch tracks its same-named branch on `origin`, while local `main` tracks
+`upstream/main`. Repository-local GitHub authentication uses the personal
+account, and the repository's default push remote is `origin`.
+
 On 2026-11-24, local changes from `749e435` (v0.5.30-beta) were checkpointed in
 `d90c144`, then upstream `4e4050a` (v0.5.31-beta, PR #100) was merged. The
 `codex/customizations-pre-main-20261124` branch preserves that checkpoint.
@@ -107,16 +114,17 @@ Commit or otherwise preserve in-progress work before merging. Then run:
 ```powershell
 git switch codex/local-customizations
 git status --short
-git fetch origin --prune --tags
-git merge --no-ff origin/main
+git fetch upstream --prune --tags
+git merge --no-ff upstream/main
 dotnet build CopilotBridge.slnx
 dotnet test tests/CopilotBridge.UnitTests
+git push
 ```
 
 Resolve model-catalog overlaps in favor of current upstream facts, retaining
 only the independent customizations above. Do not infer model retirement from
 discovery absence. Use the `copilot-model-sync` and `real-client-verify` skills
 for protocol/profile changes and native-client acceptance. Review both parent
-diffs before committing a merge, and confirm that `origin/main` is an ancestor
+diffs before committing a merge, and confirm that `upstream/main` is an ancestor
 of the resulting branch. The current task's runtime installation remains
 operator-controlled; building or merging does not deploy it.
