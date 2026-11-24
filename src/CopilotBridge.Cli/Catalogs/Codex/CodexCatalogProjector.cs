@@ -100,9 +100,9 @@ internal sealed class CodexCatalogProjector
             };
 
             // The official Codex resource advertises Ultra, but the exact
-            // GPT-6.1 Sol/Terra and GPT-6.2 Astra/Sol Copilot /responses profiles
-            // reject it (Gpt61Sol_Effort_ReProbe /
-            // October2026_CandidateContracts_Probe / Gpt62_CandidateContracts_Probe).
+            // GPT-6.1 Sol/Terra and GPT-6.2 Astra/Sol profiles reject it
+            // (Gpt61Sol_Effort_ReProbe / October2026_CandidateContracts_Probe /
+            // November2026_CandidateContracts_Probe).
             // Apply this to every source record,
             // including future same-slug baselines, without changing the
             // provenance-pinned official resource on disk.

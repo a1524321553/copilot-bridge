@@ -24,8 +24,8 @@ Both exact ids must be visible in the real client's `model/list`, with
 low/medium/high/xhigh/max choices. The cases select each id and execute a
 CSV/Decimal programming task. Read the exact printed manifests' isolated
 SQLite logs and confirm custom tool call/output round-trips before reporting
-PASS. `Gpt62_ReviewedContracts_MatchSnapshotAndCatalog` and
-`Gpt62_RealCodexBytes_RewriteBoundaries` provide the backend B2/B3 and
+PASS. The upstream `November2026_ReviewedContracts_MatchSnapshotAndCatalog` and
+`November2026_RealCodexBytes_RewriteBoundaries` provide the backend B2/B3 and
 captured-request fidelity checks.
 
 `Codex_PublishedDefaults_ListGpt56SolAndExecuteMultiToolTask_ForVerdict` copies an

@@ -843,7 +843,7 @@ Ownership is strict:
   (minimum client `0.153.0`), plus `gpt-6.1-terra` from
   `126a0ee92ed2c5e73cd8a8f7e37563e8527552d7` (minimum client `0.153.0`), and
   `gpt-6.2-astra`/`gpt-6.2-sol` from
-  `c376cf7396eff83ce4c6ac61b9553df142e7a0be` (minimum client `0.166.0`).
+  `9f80bb5957f0d863fdeaaff0ea193cac94c192d1` (minimum client `0.166.0`).
   They fill an absent exact slug in any selected
   baseline that has not yet incorporated the reviewed resource. A baseline's
   same-slug record always wins, so an official source can update the client-owned
@@ -890,7 +890,7 @@ Ownership is strict:
   A full output reserve that cannot fit leaves the existing positive percentage
   policy in effect without hiding a valid model or alias. Invalid or missing
   limits do not raise the validated exact-version baseline.
-- **The bridge owns the safe join.** Apart from the four explicitly reviewed,
+- **The bridge owns the safe join.** Apart from the six explicitly reviewed,
   digest-pinned supplements and the identity-only Sol Fast alias above,
   live-only models are never synthesized, retired/baseline-only models are
   hidden, and review overrides are retained only when their target remains
@@ -2065,18 +2065,32 @@ Codex resources exist. Listed `gpt-5.6-luna-utility` returns integrator-unavaila
 compatibility promise; endpoint discovery alone establishes neither contract.
 Administrator-disabled Claude models were not probed or changed.
 
-The 2026-11-20 reconciliation brings the Responses catalog to **19 exact
-profiles**, adding `gpt-6.2-astra` and `gpt-6.2-sol`.
-`ResponsesProbe.Gpt62_CandidateContracts_Probe` establishes
-low/medium/high/xhigh/max acceptance, none/minimal/ultra rejection, function/
-custom grammar/web-search support, and structured image function output.
-Rejected efforts fall back to low; the three existing uniform field/tool
-rejections remain. Targeted live B2/B3 checks and exact-model streaming client
-replays guard these facts. Complete pinned official model resources supplement
-missing same-slug baselines; Ultra is filtered for both supplemental and newer
-baseline rows. Inconsistent live total/prompt/output limits retain reviewed
-official context and compaction metadata. New discovery ids do not bypass exact
-route/profile registration or manufacture client-owned resources.
+The 2026-11-18 reconciliation leaves **16 exact Responses profiles**:
+`gpt-6.2-astra`, `gpt-6.2-sol`, `gpt-5.6-luna-utility`, and `mai-code-2` are
+added; exact `model_not_supported` responses retire `gpt-5.4`, `gpt-5.4-mini`,
+`gpt-5.5`, `gpt-5.6-terra`, and `gpt-5-mini`. The older entries above describe
+historical probes. `November2026_CandidateContracts_Probe` establishes both
+GPT-6.2 effort sets as `low/medium/high/xhigh/max`, while Utility and MAI 2
+also accept `none`; all four reject `minimal/ultra`, accept function/custom/
+web-search and structured image function output, and retain the three uniform
+rejections. Unsupported efforts fall back to `low`. Real streaming client
+captures reconfirm every rewrite, including minimal without search so the
+search-specific validation cannot mask the model's own effort boundary.
+
+Complete GPT-6.2 Codex resources are pinned in the supplemental catalog with
+official commit and SHA-256 provenance, supplement missing exact slugs, and
+defer to newer same-slug baselines. Both resources require Codex 0.166.0.
+Projection removes probed-rejected Ultra without changing pinned source records.
+Inconsistent 1,050,000 total / 1,050,000 prompt / 128,000 output hints retain
+official context/maximum/compaction values (Astra 272,000/872,000/null;
+Sol 500,000/872,000/null). Real Codex 0.167.0-alpha.4.1 lists one visible
+exact-id row for each with only accepted efforts, and completes multi-tool
+tasks with matching call/output histories and clean client-owned SQLite logs.
+Utility and MAI 2 are verified by explicit id; no client resource is invented.
+Grok 4.6/4.7 observations live in
+`copilot-passthrough-candidates-snapshot.json`, outside the coercing profile
+catalog: both reject custom grammar tools, and no Grok route or native-client
+promise is added. Claude models were excluded by account-access scope.
 
 1. Run `tests/CopilotBridge.Playground/CopilotGapProbes.DumpClaudeModelsAndCapabilities`
    to see what Copilot exposes on the current account.

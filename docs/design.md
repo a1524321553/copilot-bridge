@@ -157,33 +157,27 @@ worked. Copilot `/responses` rejected the separate hosted `image_generation`
 tool with `400 unsupported_value` for `gpt-5.6-sol` and `gpt-6.1-sol` under
 the `vscode-chat` integrator.
 
-## 2026-11-20 — Exact GPT-6.2 Codex picker and Responses support
+## 2026-11-18 — Reconcile non-Claude models and the .NET 10 SDK
 
-Copilot discovery already returned `gpt-6.2-astra` and `gpt-6.2-sol`, and the
-installed Codex 0.169.1 official catalog already contained both. The bridge's
-exact Responses registry/profile join nevertheless marked them hidden and
-unsupported. Register both exact ids using `Gpt62_CandidateContracts_Probe`:
-low/medium/high/xhigh/max are accepted; none/minimal/ultra, store:true,
-service_tier and image_generation are rejected. Function/custom grammar/web
-search and two-turn structured image function output are accepted. Unsupported
-efforts deliberately fall back to low.
+Live discovery and exact endpoint probes using the selected custom-OAuth
+credential add GPT-6.2 Astra/Sol, GPT-5.6 Luna Utility, and MAI-Code 2. Five
+previous profiles return `model_not_supported` under `vscode-chat` and
+integrator-unavailable under `copilot-developer-cli`: GPT-5.4, GPT-5.4 Mini,
+GPT-5.5, GPT-5.6 Terra, and GPT-5 Mini. Removing those profiles leaves 16 exact
+Responses entries. Claude models were explicitly excluded.
 
-Complete official resources from pinned `openai/codex` commit
-`c376cf7396eff83ce4c6ac61b9553df142e7a0be` supplement missing same-slug client
-baselines, including the bundled fallback. Their minimum client version remains
-0.166.0. Newer baseline resources retain precedence. Projection removes Ultra
-from both sources without changing pinned source bytes. Inconsistent live
-1,050,000 total / 1,050,000 prompt / 128,000 output limits retain official context
-and null explicit compaction metadata. The Responses snapshot now guards 19
-exact profiles. Targeted live B2/B3 probes and exact-model streaming client
-replays reconfirm all rewrite boundaries.
+Both GPT-6.2 models accept low/medium/high/xhigh/max; Utility and MAI 2 also
+accept none. All four reject minimal/ultra and retain the uniform field/tool
+rejections. Exact-model real streaming captures reconfirm each rewrite.
+Complete official GPT-6.2 resources, pinned by commit and digest, supplement
+missing client catalog rows while preserving newer same-slug metadata. Ultra
+is filtered in either case. Inconsistent live capacities keep official context
+and null compaction values. Real Codex 0.167.0-alpha.4.1 visibly offers both
+GPT-6.2 ids, executes their multi-tool tasks, and records clean dispatch logs.
+Utility and MAI 2 pass equivalent explicit-id tasks without invented picker
+resources. Grok 4.6/4.7 are live backend observations only: custom grammar
+tools remain rejected, with no route, coercion, or native-client promise added.
 
-Real Codex 0.169.1 app-server runs visibly listed and selected each exact model,
-completed the CSV/Decimal programming task with a correct 59.75 final total,
-and executed respectively nine (Sol) and seven (Astra) matching custom exec
-call/output pairs. Both isolated client SQLite logs contained zero router
-fatals, errors or retries. Routing, supplemental merge and effort-projection
-mutations all made the from-contract regression tests fail. The complete
-CI-safe unit suite passed 2039 tests. The same Codex picker and task checks
-also passed through the Windows x64 AOT binary, with nine (Sol) and seven
-(Astra) custom exec round-trips and zero client-log errors or retries.
+The official .NET 10 release feed identifies SDK 10.0.404 as the latest stable
+10.x SDK (runtime 10.0.15). It is already installed locally; `global.json` now
+pins it instead of 10.0.301, retaining the existing latest-patch policy.

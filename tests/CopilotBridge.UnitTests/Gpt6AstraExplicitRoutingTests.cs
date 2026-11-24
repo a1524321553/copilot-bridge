@@ -36,7 +36,7 @@ public sealed class Gpt6AstraExplicitRoutingTests
     [Theory]
     [InlineData("gpt-5.6-luna")]
     [InlineData("gpt-5.6-sol-fast")]
-    [InlineData("gpt-5.6-terra")]
+    [InlineData("gpt-5.6-luna-utility")]
     public void ExplicitRoute_DoesNotCollapseOtherGpt56Tiers(string model)
     {
         var target = CountTokensTestServices.Planner(ExplicitAstraRoutes())
